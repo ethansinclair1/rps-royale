@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Client, Room } from "colyseus.js";
 import * as sfx from "./sfx";
+import { isInDiscord, discordServerUrl, setupDiscord, type DiscordSession } from "./discord";
 
 type Move = "rock" | "paper" | "scissors";
 
@@ -70,7 +71,7 @@ interface StateSnapshot {
   duels: DuelSnapshot[];
 }
 
-const DEFAULT_SERVER = import.meta.env.VITE_SERVER_URL || "ws://localhost:2567";
+const DEFAULT_SERVER = discordServerUrl() || import.meta.env.VITE_SERVER_URL || "ws://localhost:2567";
 const MOVE_ICON: Record<Move, string> = { rock: "🪨", paper: "📄", scissors: "✂️" };
 const MOVE_LABEL: Record<Move, string> = { rock: "ROCK", paper: "PAPER", scissors: "SCISSORS" };
 const IMPACT_ICON: Record<Move, string> = { rock: "💥", paper: "✨", scissors: "✂️" };
@@ -139,6 +140,46 @@ export default function App() {
   useEffect(() => {
     nameRef.current = name;
   }, [name]);
+
+  useEffect(() => {
+    if (!isInDiscord()) return;
+    let cancelled = false;
+
+    setReconnectStatus("Entering the arena…");
+    setupDiscord().then((session) => {
+      if (cancelled || !session) return;
+      autoJoinDiscordRoom(session);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function autoJoinDiscordRoom(session: DiscordSession) {
+    const url = discordServerUrl() || serverUrl;
+    const displayName = session.username || nameRef.current || "Player";
+    try {
+      const client = new Client(url);
+      const available = await client.getAvailableRooms("rps_royale");
+      const match = available.find(
+        (r) => (r.metadata as { code?: string } | undefined)?.code === session.instanceId
+      );
+      const r = match
+        ? await client.joinById(match.roomId, { name: displayName })
+        : await client.create("rps_royale", { name: displayName, forcedCode: session.instanceId });
+      setName(displayName);
+      localStorage.setItem("rps-royale-server", url);
+      localStorage.setItem("rps-royale-name", displayName);
+      attachRoom(r, url);
+    } catch (e) {
+      // Fall back to the normal manual create/join screen rather than getting stuck.
+      setReconnectStatus("");
+      setName(displayName);
+      setError(e instanceof Error ? e.message : "Couldn't auto-join this channel's game - try manually below.");
+    }
+  }
 
   function attachRoom(r: Room, serverUrlUsed: string) {
     mySessionId.current = r.sessionId;

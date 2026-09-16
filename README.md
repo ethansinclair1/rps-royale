@@ -37,15 +37,37 @@ Once it's up, either set a `RPS_SERVER_URL` repo variable so the client build po
 default, or just paste the `wss://` url into the "Server settings" thing on the page itself - no
 rebuild needed.
 
-## Making it an actual Discord Activity
+## Discord Activity
 
-Right now this is just a normal website. Turning it into something launchable from Discord's
-activity menu needs a few things only you can do since it's tied to your Discord account:
+The client and server can also run as an actual Discord Activity, not just a normal website.
 
-- register an app in the [Discord dev portal](https://discord.com/developers/applications),
-  flip on Activities
-- wire in `@discord/embedded-app-sdk` on the client side
-- point the portal's URL mapping at wherever this ends up hosted
-- test it privately, then submit for review if you want it public
+The wrinkle: Activities run sandboxed inside Discord's own domain, so the game can't just talk
+to the Render URL directly like the web version does - everything has to be same-origin. So for
+Discord specifically, the Node server also serves the built client itself (`npm run build:render`
+in `client/`, a separate build with `base: /` instead of the GitHub Pages subpath, output to
+`client/dist-discord`, which `server/src/index.ts` serves as static files alongside the websocket).
+`render.yaml`'s build command already does both builds.
 
-Docs are at docs.discord.com/developers/activities/overview, walks through the whole thing.
+It also skips the whole "share a room code" thing - `client/src/discord.ts` uses the Activity's
+`instanceId` (stable per voice channel) as the room's join code automatically, so everyone who
+opens it from the same call lands in the same game. And it does a quick OAuth identify handshake
+so it can pull your Discord display name instead of asking you to type one - the server's
+`/api/token` route handles the token exchange (needs `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`
+set on Render; the secret only ever lives there, never in the client bundle).
+
+What you still have to do by hand in the [dev portal](https://discord.com/developers/applications)
+(tied to your account, can't be scripted):
+
+1. Create the app, add a placeholder OAuth2 redirect (`https://127.0.0.1` is fine), enable
+   Activities under Activities → Settings.
+2. Activities → URL Mappings: root prefix `/` → your Render hostname (e.g.
+   `rps-royale-server.onrender.com`). Since the server now serves both the client and the
+   websocket from one origin, this one mapping covers everything.
+3. Set `DISCORD_CLIENT_SECRET` in Render's dashboard (Environment tab) - grab it from the
+   portal's OAuth2 page. Don't put it in the repo.
+4. Turn on Developer Mode in your own Discord client (User Settings → Advanced), then launch the
+   Activity from a voice channel in a server you're in to test it live.
+5. Once it works, submit through the portal for App Directory review if you want it discoverable
+   outside your own server.
+
+Full tutorial: docs.discord.com/developers/docs/activities/building-an-activity

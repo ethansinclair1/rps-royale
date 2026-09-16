@@ -76,10 +76,13 @@ export class RPSRoyaleRoom extends Room<RPSState, RoomMetadata> {
   // Not part of the replicated schema - never sent to other clients.
   private rejoinTokens = new Map<string, string>();
 
-  async onCreate() {
+  async onCreate(options: { forcedCode?: string } = {}) {
     this.setState(new RPSState());
 
-    const code = generateJoinCode();
+    // A Discord Activity instance passes its own stable instanceId here so
+    // everyone in the same voice channel lands in the same room automatically,
+    // instead of a random human-friendly code.
+    const code = (options.forcedCode || "").slice(0, 32) || generateJoinCode();
     this.state.joinCode = code;
     await this.setMetadata({ code });
 
