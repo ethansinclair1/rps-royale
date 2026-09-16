@@ -55,13 +55,20 @@ https://<your-github-username>.github.io/rps-royale/
 
 GitHub Pages only serves static files, so the Colyseus server needs to run somewhere that hosts
 a live Node process — for example [Render](https://render.com), [Railway](https://railway.app), or
-[Fly.io](https://fly.io), all of which have free tiers:
+[Fly.io](https://fly.io), all of which have free tiers. This repo includes a `render.yaml`
+blueprint, so on Render it's a one-click deploy:
 
-1. Create a new **Web Service** pointed at this repo, root directory `server`.
-2. Build command: `npm install && npm run build`
-3. Start command: `npm start`
-4. Note the public URL it gives you (it'll be `https://your-app.onrender.com` or similar) — use
-   the `wss://` version of it as the server URL.
+1. Go to <https://dashboard.render.com/blueprints> (sign up free if you don't have an account —
+   no card needed for the free tier).
+2. Click **New Blueprint Instance**, connect your GitHub account, and pick the `rps-royale` repo.
+3. Render reads `render.yaml` automatically — build/start commands and root dir are already set.
+   Click **Apply**.
+4. Wait for the first deploy to finish (a couple minutes), then copy the URL it gives you, e.g.
+   `https://rps-royale-server.onrender.com` — the live server address is the same URL with
+   `wss://` instead of `https://`.
+
+(No Render account? Railway and Fly.io work the same way manually: new Web Service → root
+directory `server` → build command `npm install && npm run build` → start command `npm start`.)
 
 Once the server is deployed, either:
 
