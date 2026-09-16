@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RPS Royale Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --panel: #ffffff;
+    --border: #dcdfe6;
+    --text: #1b1d27;
+    --muted: #5a5f72;
+    --accent: #b8790a;
+    --rule: #e4e6ec;
+    --ok-bg: #eef6ee;
+    --ok-border: #b9dcb9;
+    --ok-text: #2c5c2c;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0d12;
+      --panel: #16171f;
+      --border: #2a2c38;
+      --text: #f0f1f6;
+      --muted: #9a9db0;
+      --accent: #ffb703;
+      --rule: #23252f;
+      --ok-bg: #10231a;
+      --ok-border: #235a3c;
+      --ok-text: #7fd99a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Newsreader", Georgia, "Times New Roman", serif;
+    font-size: 18px;
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  .wrap { max-width: 700px; margin: 0 auto; padding: 64px 24px 120px; }
+
+  header.doc-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 18px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .brand a { color: var(--text); text-decoration: none; }
+  .brand strong { color: var(--text); }
+
+  .updated {
+    font-family: "Oswald", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    font-size: clamp(2.2rem, 5vw, 3.1rem);
+    line-height: 1.05;
+    margin: 28px 0 12px;
+    text-wrap: balance;
+  }
+
+  .lede {
+    color: var(--muted);
+    font-size: 1.05rem;
+    font-style: italic;
+    max-width: 60ch;
+    margin: 0 0 28px;
+  }
+
+  .doc-links {
+    display: flex;
+    gap: 8px;
+    font-family: "Oswald", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .doc-links a { color: var(--muted); text-decoration: none; border-bottom: 1px solid transparent; }
+  .doc-links a[aria-current="page"] { color: var(--accent); }
+  .doc-links a:hover, .doc-links a:focus-visible { border-bottom-color: var(--accent); }
+
+  .summary-card {
+    background: var(--ok-bg);
+    border: 1px solid var(--ok-border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 56px;
+  }
+
+  .summary-card p {
+    font-family: "Oswald", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ok-text);
+    margin: 0 0 10px;
+  }
+
+  .summary-card ul { margin: 0; padding-left: 1.2em; font-size: 0.95rem; color: var(--text); }
+  .summary-card li { margin-bottom: 4px; }
+
+  section { margin-bottom: 44px; scroll-margin-top: 24px; }
+
+  h2 {
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  h2 .num { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85em; }
+
+  p { margin: 0 0 14px; }
+  p:last-child { margin-bottom: 0; }
+  ul { margin: 0 0 14px; padding-left: 1.3em; }
+  li { margin-bottom: 6px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Oswald", sans-serif;
+    font-size: 0.85rem;
+    margin: 8px 0 16px;
+  }
+
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; color: var(--muted); font-size: 0.75rem; }
+  td { font-family: "Newsreader", serif; font-size: 0.98rem; }
+
+  .table-scroll { overflow-x: auto; }
+
+  strong { color: var(--text); }
+  a { color: var(--accent); }
+  code {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 0.9em;
+  }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 40px 18px 90px; }
+    table, thead, tbody, th, td, tr { display: block; }
+    th { border-bottom: none; padding-bottom: 0; }
+    td { border-bottom: none; padding: 2px 0 10px; }
+    tr { padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="doc-head">
+    <div class="brand">🪨📄✂️ <a href="./">RPS Royale</a></div>
+    <div class="updated">Effective September 16, 2026</div>
+  </header>
+
+  <h1>Privacy Policy</h1>
+  <p class="lede">RPS Royale is a small hobby project. It collects about as little as a multiplayer game can — here's exactly what, and why.</p>
+
+  <div class="doc-links">
+    <a href="terms.html">Terms of Service</a>
+    <span>·</span>
+    <a href="privacy.html" aria-current="page">Privacy Policy</a>
+  </div>
+
+  <div class="summary-card">
+    <p>The short version</p>
+    <ul>
+      <li>No accounts, no database — nothing about you outlives the game you played</li>
+      <li>Your Discord name only, used to label you in the arena</li>
+      <li>No ads, no analytics, no selling or sharing your data</li>
+    </ul>
+  </div>
+
+  <section id="collect">
+    <h2><span class="num">01</span> What we collect</h2>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Data</th><th>When</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Discord display name (username or global name)</td><td>Only when launched as a Discord Activity, via Discord's own sign-in prompt</td><td>Shown next to your avatar in the arena, instead of asking you to type a name</td></tr>
+        <tr><td>A name you type yourself</td><td>Only when playing in a regular web browser, not inside Discord</td><td>Same — identifies you to other players in your game</td></tr>
+        <tr><td>Your moves, wins, and which abilities you hold</td><td>While a game is in progress</td><td>That's the game itself</td></tr>
+        <tr><td>A rejoin token, saved in your browser's local storage</td><td>When you join a game</td><td>Lets you get back into the same game if your connection drops</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>We don't collect your email, IP address for any purpose beyond normal server operation, payment details, or anything from Discord beyond your display name.</p>
+  </section>
+
+  <section id="oauth">
+    <h2><span class="num">02</span> How Discord sign-in works here</h2>
+    <p>Inside Discord, the game asks for the <code>identify</code> permission — nothing more. Discord hands our server a short-lived code, which we exchange, server-side, for a token that lets us read your username. That token is used once, immediately, and isn't written to a database. Your Discord password is never seen by us; that entire exchange happens through Discord's own systems.</p>
+  </section>
+
+  <section id="retention">
+    <h2><span class="num">03</span> How long we keep it</h2>
+    <p>There's no database behind RPS Royale. Every game room lives in server memory for as long as the game is being played, and is discarded — completely — when the game ends or the server restarts. The only thing that persists anywhere is the rejoin token and display name saved in <em>your own browser's</em> local storage, which you can clear at any time through your browser's own settings.</p>
+  </section>
+
+  <section id="sharing">
+    <h2><span class="num">04</span> Sharing</h2>
+    <p>We don't sell, rent, or share your information with advertisers or data brokers — there's no such relationship to begin with. The game runs on standard hosting infrastructure (Render and GitHub Pages), both of which process ordinary connection logs (like any web server does) as part of hosting the site; that's between you and them under their own privacy policies, not something we access or store ourselves.</p>
+  </section>
+
+  <section id="cookies">
+    <h2><span class="num">05</span> Cookies &amp; tracking</h2>
+    <p>No tracking cookies, no third-party analytics, no ad networks. The only thing stored client-side is browser local storage, used solely to let you rejoin a game — never to track you across sites or sessions.</p>
+  </section>
+
+  <section id="children">
+    <h2><span class="num">06</span> Children's privacy</h2>
+    <p>RPS Royale isn't directed at children and follows Discord's own minimum age policy (13+). We don't knowingly collect information from anyone younger than that.</p>
+  </section>
+
+  <section id="security">
+    <h2><span class="num">07</span> Security</h2>
+    <p>We take reasonable, standard precautions (encrypted connections, secrets kept server-side and out of source control) — but as with any online service, we can't guarantee absolute security. Given how little is ever stored, there's very little exposure to begin with.</p>
+  </section>
+
+  <section id="changes">
+    <h2><span class="num">08</span> Changes to this policy</h2>
+    <p>If this policy changes in any meaningful way, the date at the top of this page will change with it.</p>
+  </section>
+
+  <section id="contact">
+    <h2><span class="num">09</span> Contact</h2>
+    <p>Questions about this policy can be raised as an issue on the <a href="https://github.com/ethansinclair1/rps-royale" target="_blank" rel="noopener">GitHub repository</a>.</p>
+  </section>
+
+  <footer>
+    RPS Royale is an independent hobby project and is not affiliated with or endorsed by Discord Inc.
+  </footer>
+</div>
+</body>
+</html>
