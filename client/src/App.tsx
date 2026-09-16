@@ -624,12 +624,16 @@ function ArenaScreen(props: {
           {state.phase !== "lobby" && state.phase !== "gameover" && (
             <div className="round-chip">{aliveCount <= 2 ? "FINAL" : `ROUND ${state.round}`}</div>
           )}
-          <div className="room-code-chip">
-            CODE: <strong>{state.joinCode}</strong>
-            <button className="copy-btn" onClick={() => navigator.clipboard.writeText(state.joinCode)}>
-              copy
-            </button>
-          </div>
+          {isInDiscord() ? (
+            <div className="room-code-chip">🎙️ Synced to this voice channel</div>
+          ) : (
+            <div className="room-code-chip">
+              CODE: <strong>{state.joinCode}</strong>
+              <button className="copy-btn" onClick={() => navigator.clipboard.writeText(state.joinCode)}>
+                copy
+              </button>
+            </div>
+          )}
           <MuteToggle />
         </div>
 
