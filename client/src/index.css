@@ -203,6 +203,12 @@ button {
   gap: 14px;
 }
 
+.panel.center-text {
+  align-items: center;
+  text-align: center;
+  color: var(--muted);
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -257,9 +263,13 @@ input::placeholder {
   gap: 8px;
 }
 
-.join-row input {
+.code-input {
   flex: 1;
   text-transform: uppercase;
+  text-align: center;
+  letter-spacing: 0.5em;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
 .settings {
@@ -275,15 +285,25 @@ input::placeholder {
   margin-top: 10px;
 }
 
-/* ---------- arena ---------- */
+/* ---------- layout ---------- */
+
+.game-layout {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap-reverse;
+  padding: 24px 16px 64px;
+}
 
 .arena {
-  min-height: 100vh;
+  flex: 1 1 420px;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  padding: 24px 16px 64px;
 }
 
 .arena-header {
@@ -317,6 +337,11 @@ input::placeholder {
   gap: 8px;
 }
 
+.room-code-chip strong {
+  color: var(--gold);
+  letter-spacing: 0.15em;
+}
+
 .copy-btn {
   background: none;
   border: none;
@@ -325,6 +350,91 @@ input::placeholder {
   font-size: 0.75rem;
   padding: 0;
 }
+
+/* ---------- leaderboard ---------- */
+
+.leaderboard {
+  flex: 0 0 240px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  position: sticky;
+  top: 24px;
+}
+
+.leaderboard-title {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.leaderboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+}
+
+.leaderboard-row.champ {
+  border-color: var(--gold);
+  background: linear-gradient(90deg, rgba(255, 183, 3, 0.18), transparent);
+}
+
+.leaderboard-row.out {
+  opacity: 0.55;
+}
+
+.lb-pos {
+  color: var(--muted);
+  font-weight: 700;
+  width: 14px;
+}
+
+.lb-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.lb-name {
+  flex: 1;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-status {
+  color: var(--muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+/* ---------- ring ---------- */
 
 .ring-wrap {
   position: relative;
@@ -446,7 +556,6 @@ input::placeholder {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 420px;
 }
 
 .duel-card {
@@ -471,8 +580,8 @@ input::placeholder {
   font-size: 1.3rem;
 }
 
-.duel-card.flash {
-  animation: card-flash 0.5s ease;
+.duel-card.clashing {
+  animation: card-shake 0.4s ease;
 }
 
 .duel-card.draw {
@@ -506,6 +615,7 @@ input::placeholder {
   align-items: center;
   justify-content: center;
   font-size: 1.9rem;
+  position: relative;
 }
 
 .fighter-icon.revealed {
@@ -521,17 +631,38 @@ input::placeholder {
   animation: reveal-pop-right 0.4s ease;
 }
 
+.fighter-icon.lunge-a {
+  animation: lunge-a 0.9s ease;
+  z-index: 2;
+}
+
+.fighter-icon.lunge-b {
+  animation: lunge-b 0.9s ease;
+  z-index: 2;
+}
+
+.fighter-icon.hit-rock {
+  animation: hit-rock 0.9s ease forwards;
+}
+
+.fighter-icon.hit-paper {
+  animation: hit-paper 0.9s ease forwards;
+}
+
+.fighter-icon.hit-scissors {
+  animation: hit-scissors 0.9s ease forwards;
+}
+
 .fighter.won .fighter-icon {
   border-color: var(--gold);
   box-shadow: 0 0 20px rgba(255, 183, 3, 0.55);
-  animation: winner-pulse 0.9s ease-in-out infinite;
 }
 
 .fighter.lost .fighter-icon {
   border-color: var(--danger);
-  opacity: 0.4;
-  filter: grayscale(0.6);
-  transform: scale(0.9);
+  opacity: 0.35;
+  filter: grayscale(0.7);
+  transform: scale(0.85);
 }
 
 .fighter-name {
@@ -541,6 +672,14 @@ input::placeholder {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.vs-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .vs-badge {
@@ -555,7 +694,14 @@ input::placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  z-index: 1;
+}
+
+.impact-burst {
+  position: absolute;
+  font-size: 2.4rem;
+  animation: burst-pop 0.9s ease forwards;
+  pointer-events: none;
 }
 
 .duel-status {
@@ -563,11 +709,16 @@ input::placeholder {
   text-align: center;
   font-size: 0.85rem;
   color: var(--muted);
+  min-height: 1.2em;
 }
 
 .duel-status.draw-text {
   color: var(--danger);
   font-weight: 700;
+}
+
+.duel-status.result-text {
+  animation: pop-in 0.3s ease;
 }
 
 .duel-status.result-text strong {
@@ -634,16 +785,6 @@ input::placeholder {
   }
 }
 
-@keyframes winner-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 12px rgba(255, 183, 3, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 26px rgba(255, 183, 3, 0.85);
-  }
-}
-
 @keyframes reveal-pop {
   0% {
     transform: scale(0.3) translateX(20px);
@@ -672,15 +813,106 @@ input::placeholder {
   }
 }
 
-@keyframes card-flash {
-  0% {
-    background: var(--panel);
+@keyframes lunge-a {
+  0%,
+  15% {
+    transform: translateX(0) scale(1);
   }
-  30% {
-    background: #2c2712;
+  55% {
+    transform: translateX(44px) scale(1.2);
   }
   100% {
-    background: var(--panel);
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes lunge-b {
+  0%,
+  15% {
+    transform: translateX(0) scale(1);
+  }
+  55% {
+    transform: translateX(-44px) scale(1.2);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* rock lost: smothered under paper */
+@keyframes hit-rock {
+  0%,
+  40% {
+    transform: scale(1);
+    opacity: 1;
+    filter: none;
+  }
+  100% {
+    transform: scale(0.75);
+    opacity: 0.3;
+    filter: grayscale(1) blur(0.5px);
+  }
+}
+
+/* paper lost: sliced by scissors */
+@keyframes hit-paper {
+  0%,
+  30% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  55% {
+    transform: scale(1.05) rotate(-6deg);
+  }
+  100% {
+    transform: scale(0.6) rotate(14deg);
+    opacity: 0.25;
+    filter: grayscale(1);
+  }
+}
+
+/* scissors lost: crushed by rock */
+@keyframes hit-scissors {
+  0%,
+  30% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  55% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(0.5) rotate(-28deg);
+    opacity: 0.25;
+    filter: grayscale(1);
+  }
+}
+
+@keyframes burst-pop {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes card-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
   }
 }
 
@@ -727,5 +959,13 @@ input::placeholder {
 
   .pick-btn {
     width: 72px;
+  }
+}
+
+@media (max-width: 760px) {
+  .leaderboard {
+    flex: 1 1 100%;
+    max-width: 420px;
+    position: static;
   }
 }

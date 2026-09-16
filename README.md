@@ -10,14 +10,23 @@ round until one champion remains.
 
 ## Tournament rules
 
+- Whoever creates the room is the **host** — only the host can start the tournament or start a
+  rematch. Everyone else waits.
 - At the start of each round, alive players are shuffled and paired into duels (e.g. 4 players →
   2 simultaneous duels; an odd player out gets a bye straight to the next round).
 - In each duel, both fighters pick rock/paper/scissors privately — icons stay hidden (`❔`) until
-  both have chosen, then flip to reveal the result with a clash animation.
+  both have chosen, then flip together to reveal the result with a clash animation themed to the
+  winning move.
 - If a duel is a **draw** (same move), just that duel re-throws — it doesn't affect other duels
   running in the same round.
 - The loser of each duel is eliminated; winners move on to the next round's pairings.
 - Play continues until one fighter remains — the champion.
+- A **leaderboard** on the side tracks standings live: still-in-it fighters, which round each
+  eliminated player fell in, and the champion once the tournament ends.
+- Rooms are joined with a short **4-character code** instead of a long id.
+- A brief disconnect (closed laptop lid, backgrounded tab, flaky wifi) doesn't eliminate a player
+  outright — the server holds their spot for ~25 seconds and the client auto-reconnects into the
+  same duel if they come back in time.
 
 ## Running locally
 

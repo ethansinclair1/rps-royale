@@ -4,6 +4,7 @@ export class Player extends Schema {
   @type("string") name: string = "";
   @type("boolean") alive: boolean = true;
   @type("boolean") connected: boolean = true;
+  @type("number") eliminatedRound: number = -1;
 }
 
 export class Duel extends Schema {
@@ -15,6 +16,8 @@ export class Duel extends Schema {
   @type("string") bMove: string = "";
   @type("string") status: "choosing" | "resolved" = "choosing";
   @type("string") winnerId: string = "";
+  @type("string") winMove: string = "";
+  @type("string") loseMove: string = "";
   @type("string") resultText: string = "";
   @type("boolean") isBye: boolean = false;
   @type("boolean") isDraw: boolean = false;
@@ -26,4 +29,6 @@ export class RPSState extends Schema {
   @type("string") phase: "lobby" | "battle" | "gameover" = "lobby";
   @type("number") round: number = 0;
   @type("string") winnerName: string = "";
+  @type("string") hostId: string = "";
+  @type("string") joinCode: string = "";
 }

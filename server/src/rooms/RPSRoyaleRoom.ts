@@ -26,17 +26,36 @@ function shuffle<T>(items: T[]): T[] {
   return result;
 }
 
+// Avoids visually ambiguous characters (0/O, 1/I/L) in join codes.
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function generateJoinCode(length = 4): string {
+  let code = "";
+  for (let i = 0; i < length; i++) {
+    code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  }
+  return code;
+}
+
 const MAX_PLAYERS = 4;
 const MIN_PLAYERS_TO_START = 2;
-const REVEAL_DELAY_MS = 2600;
-const DRAW_RESET_DELAY_MS = 1800;
+const REVEAL_DELAY_MS = 4500;
+const DRAW_RESET_DELAY_MS = 2200;
+const RECONNECTION_GRACE_SECONDS = 25;
 
-export class RPSRoyaleRoom extends Room<RPSState> {
+interface RoomMetadata {
+  code: string;
+}
+
+export class RPSRoyaleRoom extends Room<RPSState, RoomMetadata> {
   maxClients = MAX_PLAYERS;
   private advanceScheduled = false;
 
-  onCreate() {
+  async onCreate() {
     this.setState(new RPSState());
+
+    const code = generateJoinCode();
+    this.state.joinCode = code;
+    await this.setMetadata({ code });
 
     this.onMessage("start", (client) => this.handleStart(client));
     this.onMessage("move", (client, message) => this.handleMove(client, message));
@@ -52,18 +71,34 @@ export class RPSRoyaleRoom extends Room<RPSState> {
     const requestedName = (options.name || "").trim();
     player.name = (requestedName || `Player ${this.state.players.size + 1}`).slice(0, 16);
     this.state.players.set(client.sessionId, player);
+
+    if (!this.state.hostId) {
+      this.state.hostId = client.sessionId;
+    }
   }
 
-  onLeave(client: Client) {
+  async onLeave(client: Client, consented?: boolean) {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
 
     if (this.state.phase === "lobby") {
       this.state.players.delete(client.sessionId);
+      this.reassignHostIfNeeded(client.sessionId);
       return;
     }
 
     player.connected = false;
+
+    if (!consented) {
+      try {
+        await this.allowReconnection(client, RECONNECTION_GRACE_SECONDS);
+        player.connected = true;
+        return;
+      } catch {
+        // Reconnection window expired - treat as a real departure below.
+      }
+    }
+
     if (!player.alive) return;
 
     for (const duel of this.state.duels) {
@@ -76,12 +111,19 @@ export class RPSRoyaleRoom extends Room<RPSState> {
     }
 
     player.alive = false;
+    player.eliminatedRound = this.state.round;
     this.checkRoundComplete();
+  }
+
+  private reassignHostIfNeeded(leftId: string) {
+    if (this.state.hostId !== leftId) return;
+    const next = [...this.state.players.keys()][0];
+    this.state.hostId = next ?? "";
   }
 
   private handleStart(client: Client) {
     if (this.state.phase !== "lobby") return;
-    if (!this.state.players.has(client.sessionId)) return;
+    if (client.sessionId !== this.state.hostId) return;
     if (this.state.players.size < MIN_PLAYERS_TO_START) return;
 
     this.state.phase = "battle";
@@ -125,9 +167,9 @@ export class RPSRoyaleRoom extends Room<RPSState> {
 
     const aWins = beats(a, b);
     duel.winnerId = aWins ? duel.aId : duel.bId;
-    const winMove = aWins ? a : b;
-    const loseMove = aWins ? b : a;
-    duel.resultText = `${winMove} beats ${loseMove}`;
+    duel.winMove = aWins ? a : b;
+    duel.loseMove = aWins ? b : a;
+    duel.resultText = `${duel.winMove} beats ${duel.loseMove}`;
     duel.status = "resolved";
 
     this.checkRoundComplete();
@@ -145,6 +187,7 @@ export class RPSRoyaleRoom extends Room<RPSState> {
 
     for (const p of this.state.players.values()) {
       p.alive = true;
+      p.eliminatedRound = -1;
     }
     this.state.duels.clear();
     this.state.phase = "lobby";
@@ -172,7 +215,10 @@ export class RPSRoyaleRoom extends Room<RPSState> {
       const loserId = duel.winnerId === duel.aId ? duel.bId : duel.aId;
       if (loserId) {
         const loser = this.state.players.get(loserId);
-        if (loser) loser.alive = false;
+        if (loser) {
+          loser.alive = false;
+          loser.eliminatedRound = this.state.round;
+        }
       }
 
       const winner = this.state.players.get(duel.winnerId);
