@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Client, Room } from "colyseus.js";
+import * as sfx from "./sfx";
 
 type Move = "rock" | "paper" | "scissors";
 
@@ -8,6 +9,7 @@ interface PlayerSnapshot {
   alive: boolean;
   connected: boolean;
   eliminatedRound: number;
+  wins: number;
   abilities: string[];
 }
 
@@ -222,6 +224,7 @@ export default function App() {
   }
 
   async function createRoom() {
+    sfx.playClick();
     setBusy(true);
     setError("");
     try {
@@ -240,6 +243,7 @@ export default function App() {
   async function joinRoom() {
     const code = joinCode.trim().toUpperCase();
     if (!code) return;
+    sfx.playClick();
     setBusy(true);
     setError("");
     try {
@@ -263,6 +267,7 @@ export default function App() {
 
   async function rejoinPrevious() {
     if (!resumable) return;
+    sfx.playClick();
     setBusy(true);
     setError("");
     try {
@@ -289,22 +294,27 @@ export default function App() {
   }
 
   function startGame() {
+    sfx.playClick();
     room?.send("start");
   }
 
   function throwMove(move: Move) {
+    sfx.playPick();
     room?.send("move", { move });
   }
 
   function activateAbility(abilityId: AbilityId) {
+    sfx.playClick();
     room?.send("ability", { abilityId });
   }
 
   function rematch() {
+    sfx.playClick();
     room?.send("rematch");
   }
 
   function leaveRoom() {
+    sfx.playClick();
     room?.leave(true);
     setRoom(null);
     setState(null);
@@ -479,22 +489,42 @@ function placement(p: PlayerSnapshot, state: StateSnapshot): { label: string; ra
   return { label: `Out - Round ${p.eliminatedRound}`, rank: -p.eliminatedRound };
 }
 
+function MuteToggle() {
+  const [muted, setMutedState] = useState(() => sfx.isMuted());
+
+  function toggle() {
+    const next = !muted;
+    sfx.setMuted(next);
+    setMutedState(next);
+    if (!next) sfx.playClick();
+  }
+
+  return (
+    <button className="mute-toggle" onClick={toggle} title={muted ? "Unmute sounds" : "Mute sounds"}>
+      {muted ? "🔇" : "🔊"}
+    </button>
+  );
+}
+
 function Leaderboard({ state }: { state: StateSnapshot }) {
   const ranked = useMemo(() => {
     return Object.entries(state.players)
       .map(([id, p]) => ({ id, p, ...placement(p, state) }))
-      .sort((a, b) => a.rank - b.rank);
+      .sort((a, b) => b.p.wins - a.p.wins || a.rank - b.rank);
   }, [state]);
 
   return (
     <aside className="leaderboard">
-      <h2 className="leaderboard-title">LEADERBOARD</h2>
+      <h2 className="leaderboard-title">SCOREBOARD</h2>
       <ol className="leaderboard-list">
         {ranked.map(({ id, p, label, rank }, i) => (
           <li key={id} className={`leaderboard-row ${rank === 0 ? "champ" : ""} ${!p.alive && rank !== 0 ? "out" : ""}`}>
             <span className="lb-pos">{i + 1}</span>
             <span className="lb-avatar">{initials(p.name)}</span>
             <span className="lb-name">{p.name}</span>
+            <span className="lb-wins" title="Tournament wins">
+              🏆 {p.wins}
+            </span>
             <span className="lb-status">{rank === 0 ? "🏆" : p.alive ? "🔥" : "💀"} {label === "CHAMPION" ? "" : label}</span>
           </li>
         ))}
@@ -518,6 +548,10 @@ function ArenaScreen(props: {
   const players = useMemo(() => Object.entries(state.players), [state.players]);
   const isHost = mySessionId === state.hostId;
   const me = state.players[mySessionId];
+
+  useEffect(() => {
+    if (state.phase === "gameover") sfx.playChampionFanfare();
+  }, [state.phase, state.winnerName]);
 
   const activeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -555,6 +589,7 @@ function ArenaScreen(props: {
               copy
             </button>
           </div>
+          <MuteToggle />
         </div>
 
         <div className="ring-wrap" style={{ width: ringSize + 120, height: ringSize + 120 }}>
@@ -746,13 +781,30 @@ function DuelCard(props: { duel: DuelSnapshot; mySessionId: string; onThrow: (m:
       return;
     }
     setStage("reveal");
-    const t1 = setTimeout(() => setStage("clash"), 550);
+    sfx.playReveal();
+
+    const amParticipant = duel.aId === mySessionId || duel.bId === mySessionId;
+    const t1 = setTimeout(() => {
+      setStage("clash");
+      if (amParticipant && !duel.isDraw) {
+        if (duel.winnerId === mySessionId) sfx.playWin();
+        else sfx.playLose();
+      }
+    }, 550);
     const t2 = setTimeout(() => setStage("aftermath"), 1550);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [duel.status, duel.aId, duel.bId, duel.resultText]);
+  }, [duel.status, duel.aId, duel.bId, duel.resultText, duel.isDraw, duel.winnerId, mySessionId]);
+
+  useEffect(() => {
+    if (duel.isDraw) sfx.playDraw();
+  }, [duel.isDraw]);
+
+  useEffect(() => {
+    if (duel.abilityEvent) sfx.playAbility();
+  }, [duel.abilityEvent]);
 
   if (duel.isBye) {
     return (

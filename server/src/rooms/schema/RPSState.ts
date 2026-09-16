@@ -5,6 +5,7 @@ export class Player extends Schema {
   @type("boolean") alive: boolean = true;
   @type("boolean") connected: boolean = true;
   @type("number") eliminatedRound: number = -1;
+  @type("number") wins: number = 0;
   @type(["string"]) abilities = new ArraySchema<string>();
 }
 

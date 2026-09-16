@@ -419,6 +419,7 @@ export class RPSRoyaleRoom extends Room<RPSState, RoomMetadata> {
       const champ = this.state.players.get(winners[0]);
       this.state.phase = "gameover";
       this.state.winnerName = champ?.name ?? "Nobody";
+      if (champ) champ.wins += 1;
       return;
     }
 

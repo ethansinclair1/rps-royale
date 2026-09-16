@@ -363,6 +363,23 @@ input::placeholder {
   padding: 0;
 }
 
+.mute-toggle {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mute-toggle:hover {
+  border-color: var(--gold);
+}
+
 /* ---------- leaderboard ---------- */
 
 .leaderboard {
@@ -395,8 +412,9 @@ input::placeholder {
 
 .leaderboard-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -441,10 +459,20 @@ input::placeholder {
   white-space: nowrap;
 }
 
+.lb-wins {
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .lb-status {
   color: var(--muted);
   font-size: 0.68rem;
   white-space: nowrap;
+  flex-basis: 100%;
+  padding-left: 22px;
 }
 
 /* ---------- abilities ---------- */
