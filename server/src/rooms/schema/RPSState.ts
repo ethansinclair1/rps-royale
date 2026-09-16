@@ -5,6 +5,7 @@ export class Player extends Schema {
   @type("boolean") alive: boolean = true;
   @type("boolean") connected: boolean = true;
   @type("number") eliminatedRound: number = -1;
+  @type(["string"]) abilities = new ArraySchema<string>();
 }
 
 export class Duel extends Schema {
@@ -21,6 +22,7 @@ export class Duel extends Schema {
   @type("string") resultText: string = "";
   @type("boolean") isBye: boolean = false;
   @type("boolean") isDraw: boolean = false;
+  @type("string") abilityEvent: string = "";
 }
 
 export class RPSState extends Schema {

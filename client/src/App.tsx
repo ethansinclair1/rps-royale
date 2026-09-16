@@ -8,6 +8,7 @@ interface PlayerSnapshot {
   alive: boolean;
   connected: boolean;
   eliminatedRound: number;
+  abilities: string[];
 }
 
 interface DuelSnapshot {
@@ -24,7 +25,38 @@ interface DuelSnapshot {
   resultText: string;
   isBye: boolean;
   isDraw: boolean;
+  abilityEvent: string;
 }
+
+type AbilityId = "scout" | "mirror" | "rewind" | "coinflip" | "sabotage";
+
+const ABILITY_INFO: Record<AbilityId, { name: string; icon: string; description: string }> = {
+  scout: {
+    name: "Scout",
+    icon: "🔍",
+    description: "Narrows your opponent's move down to 2 of 3 possibilities.",
+  },
+  mirror: {
+    name: "Mirror",
+    icon: "🪞",
+    description: "Copy your opponent's move once they've thrown, forcing a draw + re-throw.",
+  },
+  rewind: {
+    name: "Rewind",
+    icon: "⏪",
+    description: "Undo a loss you just suffered and force a re-throw. Only works right after losing.",
+  },
+  coinflip: {
+    name: "Coin Flip",
+    icon: "🎲",
+    description: "50/50 chance to win or lose this duel instantly. Real risk, either way.",
+  },
+  sabotage: {
+    name: "Sabotage",
+    icon: "🔧",
+    description: "Steal a random ability from your opponent's inventory.",
+  },
+};
 
 interface StateSnapshot {
   phase: "lobby" | "battle" | "gameover";
@@ -41,9 +73,43 @@ const MOVE_ICON: Record<Move, string> = { rock: "🪨", paper: "📄", scissors:
 const MOVE_LABEL: Record<Move, string> = { rock: "ROCK", paper: "PAPER", scissors: "SCISSORS" };
 const IMPACT_ICON: Record<Move, string> = { rock: "💥", paper: "✨", scissors: "✂️" };
 const CONSENTED_CLOSE_CODE = 4000;
+const SESSION_KEY = "rps-royale-session";
+const REJOIN_ATTEMPTS = 5;
+const REJOIN_RETRY_MS = 2500;
 
 function initials(name: string) {
   return name.trim().slice(0, 2).toUpperCase();
+}
+
+interface StoredSession {
+  serverUrl: string;
+  joinCode: string;
+  token: string;
+  name: string;
+}
+
+function readStoredSession(): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.token || !parsed?.serverUrl) return null;
+    return parsed as StoredSession;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session: StoredSession) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+function clearStoredSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default function App() {
@@ -56,21 +122,44 @@ export default function App() {
   const [state, setState] = useState<StateSnapshot | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [reconnecting, setReconnecting] = useState(false);
+  const [reconnectStatus, setReconnectStatus] = useState("");
+  const [resumable, setResumable] = useState<StoredSession | null>(() => readStoredSession());
+  const [scoutResult, setScoutResult] = useState<{ candidates: Move[]; opponentName: string } | null>(null);
   const mySessionId = useRef("");
-  const serverUrlRef = useRef(serverUrl);
+  const nameRef = useRef(name);
 
   useEffect(() => {
-    serverUrlRef.current = serverUrl;
-  }, [serverUrl]);
+    if (!scoutResult) return;
+    const t = setTimeout(() => setScoutResult(null), 4000);
+    return () => clearTimeout(t);
+  }, [scoutResult]);
 
-  function attachRoom(r: Room) {
+  useEffect(() => {
+    nameRef.current = name;
+  }, [name]);
+
+  function attachRoom(r: Room, serverUrlUsed: string) {
     mySessionId.current = r.sessionId;
     setRoom(r);
-    setReconnecting(false);
+    setReconnectStatus("");
     setError("");
 
     r.onStateChange((s: unknown) => setState((s as { toJSON(): StateSnapshot }).toJSON()));
+
+    r.onMessage("rejoin-token", (msg: { token: string }) => {
+      const session: StoredSession = {
+        serverUrl: serverUrlUsed,
+        joinCode: r.state?.joinCode || "",
+        token: msg.token,
+        name: nameRef.current || "Player",
+      };
+      saveSession(session);
+      setResumable(session);
+    });
+
+    r.onMessage("scout-result", (msg: { candidates: Move[]; opponentName: string }) => {
+      setScoutResult(msg);
+    });
 
     r.onLeave((code: number) => {
       if (code === CONSENTED_CLOSE_CODE) {
@@ -78,23 +167,58 @@ export default function App() {
         setState(null);
         return;
       }
-      // Unexpected drop (network blip, backgrounded tab) - try to reconnect
-      // into the same room instead of kicking the player back to the lobby.
-      setReconnecting(true);
-      const token = r.reconnectionToken;
-      const client = new Client(serverUrlRef.current);
-      client
-        .reconnect(token)
-        .then((reconnected) => attachRoom(reconnected))
-        .catch(() => {
-          setReconnecting(false);
-          setRoom(null);
-          setState(null);
-          setError("Lost connection to the arena.");
-        });
+      // Unexpected drop (network blip, backgrounded tab, server hiccup) -
+      // try to rejoin the same seat instead of just kicking them to the menu.
+      const roomId = r.id;
+      const joinCodeAtDrop = r.state?.joinCode || "";
+      setRoom(null);
+      setState(null);
+      rejoinAfterDrop(roomId, joinCodeAtDrop);
     });
 
     r.onError((_code, message) => setError(message || "Connection error"));
+  }
+
+  async function rejoinAfterDrop(roomId: string, joinCodeAtDrop: string) {
+    const stored = readStoredSession();
+    if (!stored) {
+      setError("Lost connection to the arena.");
+      return;
+    }
+
+    for (let attempt = 1; attempt <= REJOIN_ATTEMPTS; attempt++) {
+      setReconnectStatus(`Reconnecting… (${attempt}/${REJOIN_ATTEMPTS})`);
+      try {
+        const client = new Client(stored.serverUrl);
+        const r = await client.joinById(roomId, { name: stored.name, rejoinToken: stored.token });
+        attachRoom(r, stored.serverUrl);
+        return;
+      } catch {
+        if (attempt < REJOIN_ATTEMPTS) await sleep(REJOIN_RETRY_MS);
+      }
+    }
+
+    // The room itself may have restarted (e.g. a cold-started free-tier
+    // server) - try resolving a fresh roomId from the join code before giving up.
+    const code = joinCodeAtDrop || stored.joinCode;
+    if (code) {
+      try {
+        setReconnectStatus("Looking for the arena…");
+        const client = new Client(stored.serverUrl);
+        const available = await client.getAvailableRooms("rps_royale");
+        const match = available.find((rm) => (rm.metadata as { code?: string } | undefined)?.code === code);
+        if (match) {
+          const r = await client.joinById(match.roomId, { name: stored.name, rejoinToken: stored.token });
+          attachRoom(r, stored.serverUrl);
+          return;
+        }
+      } catch {
+        // fall through to failure below
+      }
+    }
+
+    setReconnectStatus("");
+    setError("Lost connection to the arena. It may have ended - try rejoining with the code below.");
   }
 
   async function createRoom() {
@@ -105,7 +229,7 @@ export default function App() {
       const r = await client.create("rps_royale", { name: name || "Player" });
       localStorage.setItem("rps-royale-server", serverUrl);
       localStorage.setItem("rps-royale-name", name);
-      attachRoom(r);
+      attachRoom(r, serverUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create room. Is the server running?");
     } finally {
@@ -129,9 +253,36 @@ export default function App() {
       const r = await client.joinById(match.roomId, { name: name || "Player" });
       localStorage.setItem("rps-royale-server", serverUrl);
       localStorage.setItem("rps-royale-name", name);
-      attachRoom(r);
+      attachRoom(r, serverUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to join room. Check the code and server URL.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejoinPrevious() {
+    if (!resumable) return;
+    setBusy(true);
+    setError("");
+    try {
+      const client = new Client(resumable.serverUrl);
+      const available = await client.getAvailableRooms("rps_royale");
+      const match = available.find((r) => (r.metadata as { code?: string } | undefined)?.code === resumable.joinCode);
+      if (!match) {
+        setError("That arena is gone. Ask the host for a new code.");
+        clearStoredSession();
+        setResumable(null);
+        return;
+      }
+      const r = await client.joinById(match.roomId, { name: resumable.name, rejoinToken: resumable.token });
+      setServerUrl(resumable.serverUrl);
+      setName(resumable.name);
+      attachRoom(r, resumable.serverUrl);
+    } catch {
+      setError("Could not rejoin - the session may have expired.");
+      clearStoredSession();
+      setResumable(null);
     } finally {
       setBusy(false);
     }
@@ -145,6 +296,10 @@ export default function App() {
     room?.send("move", { move });
   }
 
+  function activateAbility(abilityId: AbilityId) {
+    room?.send("ability", { abilityId });
+  }
+
   function rematch() {
     room?.send("rematch");
   }
@@ -153,13 +308,15 @@ export default function App() {
     room?.leave(true);
     setRoom(null);
     setState(null);
+    clearStoredSession();
+    setResumable(null);
   }
 
-  if (reconnecting) {
+  if (reconnectStatus) {
     return (
       <div className="landing">
         <div className="panel center-text">
-          <p>Reconnecting to the arena…</p>
+          <p>{reconnectStatus}</p>
         </div>
       </div>
     );
@@ -178,6 +335,8 @@ export default function App() {
         error={error}
         onCreate={createRoom}
         onJoin={joinRoom}
+        resumable={resumable}
+        onRejoinPrevious={rejoinPrevious}
       />
     );
   }
@@ -188,9 +347,11 @@ export default function App() {
       mySessionId={mySessionId.current}
       onStart={startGame}
       onThrow={throwMove}
+      onActivateAbility={activateAbility}
       onRematch={rematch}
       onLeave={leaveRoom}
       error={error}
+      scoutResult={scoutResult}
     />
   );
 }
@@ -206,8 +367,23 @@ function LandingScreen(props: {
   error: string;
   onCreate: () => void;
   onJoin: () => void;
+  resumable: StoredSession | null;
+  onRejoinPrevious: () => void;
 }) {
-  const { name, setName, joinCode, setJoinCode, serverUrl, setServerUrl, busy, error, onCreate, onJoin } = props;
+  const {
+    name,
+    setName,
+    joinCode,
+    setJoinCode,
+    serverUrl,
+    setServerUrl,
+    busy,
+    error,
+    onCreate,
+    onJoin,
+    resumable,
+    onRejoinPrevious,
+  } = props;
 
   return (
     <div className="landing">
@@ -230,6 +406,19 @@ function LandingScreen(props: {
       </div>
 
       <div className="panel">
+        {resumable && (
+          <>
+            <button className="btn btn-rejoin" onClick={onRejoinPrevious} disabled={busy}>
+              ↩ REJOIN AS {resumable.name.toUpperCase()}
+            </button>
+            <div className="or-split">
+              <span />
+              OR START FRESH
+              <span />
+            </div>
+          </>
+        )}
+
         <label className="field">
           <span>FIGHTER NAME</span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={16} placeholder="Player" />
@@ -319,13 +508,16 @@ function ArenaScreen(props: {
   mySessionId: string;
   onStart: () => void;
   onThrow: (m: Move) => void;
+  onActivateAbility: (a: AbilityId) => void;
   onRematch: () => void;
   onLeave: () => void;
   error: string;
+  scoutResult: { candidates: Move[]; opponentName: string } | null;
 }) {
-  const { state, mySessionId, onStart, onThrow, onRematch, onLeave, error } = props;
+  const { state, mySessionId, onStart, onThrow, onActivateAbility, onRematch, onLeave, error, scoutResult } = props;
   const players = useMemo(() => Object.entries(state.players), [state.players]);
   const isHost = mySessionId === state.hostId;
+  const me = state.players[mySessionId];
 
   const activeIds = useMemo(() => {
     const ids = new Set<string>();
@@ -340,8 +532,15 @@ function ArenaScreen(props: {
   const ringSize = players.length <= 2 ? 190 : 220;
   const radius = ringSize / 2;
 
+  const myDuel = state.duels.find((d) => d.aId === mySessionId || d.bId === mySessionId);
+  const myUsableCheck = useMemo(() => makeUsabilityCheck(myDuel, mySessionId), [myDuel, mySessionId]);
+
   return (
     <div className="game-layout">
+      {state.phase === "battle" && (
+        <AbilityBar abilities={me?.abilities || []} isUsable={myUsableCheck} onActivate={onActivateAbility} />
+      )}
+
       <div className="arena">
         <div className="arena-header">
           <h1 className="brand-title small">
@@ -378,6 +577,11 @@ function ArenaScreen(props: {
                 style={{ transform: `translate(${x}px, ${y}px)` }}
               >
                 <div className="avatar-circle">{initials(p.name)}</div>
+                {id !== mySessionId && p.abilities.length > 0 && (
+                  <div className="ability-count" title={`${p.abilities.length} abilit${p.abilities.length === 1 ? "y" : "ies"} held`}>
+                    🎒{p.abilities.length}
+                  </div>
+                )}
                 <div className="avatar-name">
                   {isThisHost && "👑 "}
                   {p.name}
@@ -387,6 +591,25 @@ function ArenaScreen(props: {
             );
           })}
         </div>
+
+        {scoutResult && (
+          <div className="scout-toast">
+            {scoutResult.candidates.length === 0 ? (
+              <>🔍 {scoutResult.opponentName} hasn't picked yet!</>
+            ) : (
+              <>
+                🔍 {scoutResult.opponentName} will throw{" "}
+                {scoutResult.candidates.map((m, i) => (
+                  <span key={m}>
+                    {i > 0 && " or "}
+                    {MOVE_ICON[m]} {m}
+                  </span>
+                ))}
+                !
+              </>
+            )}
+          </div>
+        )}
 
         {state.phase === "lobby" && (
           <div className="lobby-controls">
@@ -442,6 +665,75 @@ function ArenaScreen(props: {
   );
 }
 
+function makeUsabilityCheck(myDuel: DuelSnapshot | undefined, mySessionId: string) {
+  return (abilityId: AbilityId): boolean => {
+    if (!myDuel || myDuel.isBye) return false;
+    const iAmA = myDuel.aId === mySessionId;
+    const myMove = iAmA ? myDuel.aMove : myDuel.bMove;
+    const oppMove = iAmA ? myDuel.bMove : myDuel.aMove;
+
+    switch (abilityId) {
+      case "scout":
+      case "coinflip":
+      case "sabotage":
+        return myDuel.status === "choosing";
+      case "mirror":
+        return myDuel.status === "choosing" && !myMove && !!oppMove;
+      case "rewind":
+        return (
+          myDuel.status === "resolved" &&
+          !myDuel.isDraw &&
+          !!myDuel.winnerId &&
+          myDuel.winnerId !== mySessionId
+        );
+      default:
+        return false;
+    }
+  };
+}
+
+function AbilityBar(props: {
+  abilities: string[];
+  isUsable: (a: AbilityId) => boolean;
+  onActivate: (a: AbilityId) => void;
+}) {
+  const { abilities, isUsable, onActivate } = props;
+  const slots = [0, 1, 2];
+
+  return (
+    <aside className="ability-bar">
+      <h2 className="leaderboard-title">ABILITIES</h2>
+      <div className="ability-slots">
+        {slots.map((i) => {
+          const abilityId = abilities[i] as AbilityId | undefined;
+          if (!abilityId) {
+            return (
+              <div key={i} className="ability-slot empty">
+                <span className="ability-slot-icon">—</span>
+              </div>
+            );
+          }
+          const info = ABILITY_INFO[abilityId];
+          const usable = isUsable(abilityId);
+          return (
+            <button
+              key={i}
+              className={`ability-slot filled ${usable ? "usable" : "locked"}`}
+              onClick={() => usable && onActivate(abilityId)}
+              disabled={!usable}
+              data-tooltip={`${info.name}: ${info.description}`}
+            >
+              <span className="ability-slot-icon">{info.icon}</span>
+              <span className="ability-slot-name">{info.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="ability-hint">Earn one each round you survive.</p>
+    </aside>
+  );
+}
+
 type AnimStage = "idle" | "reveal" | "clash" | "aftermath";
 
 function DuelCard(props: { duel: DuelSnapshot; mySessionId: string; onThrow: (m: Move) => void }) {
@@ -487,6 +779,12 @@ function DuelCard(props: { duel: DuelSnapshot; mySessionId: string; onThrow: (m:
         duel.isDraw ? "draw" : ""
       }`}
     >
+      {duel.abilityEvent && (
+        <div key={duel.abilityEvent} className="ability-banner">
+          {duel.abilityEvent}
+        </div>
+      )}
+
       <div className="duel-row">
         <FighterSlot
           name={duel.aName}

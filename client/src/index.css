@@ -114,6 +114,17 @@ button {
   background: var(--gold-2);
 }
 
+.btn-rejoin {
+  background: transparent;
+  border: 2px dashed var(--paper);
+  color: var(--paper);
+  width: 100%;
+}
+
+.btn-rejoin:hover:not(:disabled) {
+  background: rgba(79, 195, 247, 0.1);
+}
+
 /* ---------- landing ---------- */
 
 .landing {
@@ -293,7 +304,7 @@ input::placeholder {
   align-items: flex-start;
   justify-content: center;
   gap: 28px;
-  flex-wrap: wrap-reverse;
+  flex-wrap: wrap;
   padding: 24px 16px 64px;
 }
 
@@ -304,6 +315,7 @@ input::placeholder {
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  order: 0;
 }
 
 .arena-header {
@@ -361,6 +373,7 @@ input::placeholder {
   padding: 16px;
   position: sticky;
   top: 24px;
+  order: 1;
 }
 
 .leaderboard-title {
@@ -432,6 +445,160 @@ input::placeholder {
   color: var(--muted);
   font-size: 0.68rem;
   white-space: nowrap;
+}
+
+/* ---------- abilities ---------- */
+
+.ability-bar {
+  flex: 0 0 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  position: sticky;
+  top: 24px;
+  order: -1;
+}
+
+.ability-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ability-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: inherit;
+  text-align: left;
+  position: relative;
+}
+
+.ability-slot.empty {
+  background: transparent;
+  border: 2px dashed var(--border);
+  color: var(--muted);
+  justify-content: center;
+  padding: 12px;
+}
+
+.ability-slot.filled {
+  border: 2px solid var(--gold);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.ability-slot.filled.locked {
+  border-color: var(--border);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ability-slot.filled.usable {
+  cursor: pointer;
+}
+
+.ability-slot.filled.usable:hover {
+  background: rgba(255, 183, 3, 0.15);
+  transform: translateY(-1px);
+}
+
+.ability-slot-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.ability-slot-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ability-hint {
+  margin: 12px 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ability-slot[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg);
+  border: 1px solid var(--gold);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  width: 180px;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.ability-count {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: var(--panel-2);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  color: var(--gold);
+}
+
+.scout-toast {
+  background: var(--panel-2);
+  border: 1px solid var(--paper);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  text-align: center;
+  animation: pop-in 0.3s ease;
+}
+
+.ability-banner {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: #1a1300;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  animation: banner-pop 2.2s ease forwards;
+  z-index: 5;
+}
+
+@keyframes banner-pop {
+  0% {
+    transform: translateX(-50%) translateY(6px) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translateX(-50%) translateY(0) scale(1.05);
+    opacity: 1;
+  }
+  25% {
+    transform: translateX(-50%) scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ---------- ring ---------- */
@@ -559,6 +726,7 @@ input::placeholder {
 }
 
 .duel-card {
+  position: relative;
   background: var(--panel);
   border: 2px solid var(--border);
   border-radius: 14px;
@@ -963,9 +1131,21 @@ input::placeholder {
 }
 
 @media (max-width: 760px) {
-  .leaderboard {
+  .arena {
+    order: -1;
+  }
+
+  .leaderboard,
+  .ability-bar {
     flex: 1 1 100%;
     max-width: 420px;
     position: static;
+    order: 1;
+  }
+
+  .ability-slot[data-tooltip]:hover::after {
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
   }
 }
