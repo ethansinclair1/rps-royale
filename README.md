@@ -1,20 +1,23 @@
 # RPS Royale
 
-Rock-paper-scissors battle royale for 2–4 players. Everyone throws at once each round;
-whoever throws the losing move is eliminated. Last player standing wins.
+A rock-paper-scissors single-elimination tournament for 2–4 players. Fighters are arranged
+around an arena ring; each round they're randomly paired into 1-on-1 duels, shown head-to-head
+with a reveal animation, and the loser of each duel is out. Winners get re-paired for the next
+round until one champion remains.
 
 - **Client:** React + Vite (`client/`), talks to the server over WebSockets via `colyseus.js`.
-- **Server:** Node.js + TypeScript + [Colyseus](https://colyseus.io) (`server/`), authoritative game state and round resolution (`server/src/rooms/RPSRoyaleRoom.ts`).
+- **Server:** Node.js + TypeScript + [Colyseus](https://colyseus.io) (`server/`), authoritative game state and duel resolution (`server/src/rooms/RPSRoyaleRoom.ts`).
 
-## Elimination rules
+## Tournament rules
 
-Each round, every alive player picks rock, paper, or scissors at the same time.
-
-- If everyone throws the **same move** → draw, round replays.
-- If **two different moves** are thrown → everyone who threw the losing move is eliminated (could be one player or several).
-- If **all three moves** appear → draw, round replays (no single move is "worse" than another in a 3-way cycle).
-
-Play continues until one player remains.
+- At the start of each round, alive players are shuffled and paired into duels (e.g. 4 players →
+  2 simultaneous duels; an odd player out gets a bye straight to the next round).
+- In each duel, both fighters pick rock/paper/scissors privately — icons stay hidden (`❔`) until
+  both have chosen, then flip to reveal the result with a clash animation.
+- If a duel is a **draw** (same move), just that duel re-throws — it doesn't affect other duels
+  running in the same round.
+- The loser of each duel is eliminated; winners move on to the next round's pairings.
+- Play continues until one fighter remains — the champion.
 
 ## Running locally
 
