@@ -10,6 +10,6 @@ services:
       - key: NODE_VERSION
         value: 20.11.0
       - key: DISCORD_CLIENT_ID
-        value: "1549783976619810836"
+        value: "1549787463642517516"
       - key: DISCORD_CLIENT_SECRET
         sync: false

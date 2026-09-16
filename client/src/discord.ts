@@ -1,6 +1,6 @@
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 
-export const DISCORD_CLIENT_ID = "1549783976619810836";
+export const DISCORD_CLIENT_ID = "1549787463642517516";
 
 export function isInDiscord(): boolean {
   return typeof window !== "undefined" && window.location.hostname.endsWith(".discordsays.com");
